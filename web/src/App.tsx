@@ -1,26 +1,31 @@
 import { useEffect, useState } from 'react'
+import { Bibliotheque } from './Bibliotheque'
 
-type ServerStatus = 'checking' | 'ok' | 'unreachable'
+function useRoute() {
+  const [hash, setHash] = useState(location.hash)
+  useEffect(() => {
+    const maj = () => setHash(location.hash)
+    addEventListener('hashchange', maj)
+    return () => removeEventListener('hashchange', maj)
+  }, [])
+  const morceau = hash.match(/^#\/morceau\/([\w-]{11})$/)
+  return morceau ? { page: 'morceau' as const, videoId: morceau[1] } : { page: 'bibliotheque' as const }
+}
 
 function App() {
-  const [status, setStatus] = useState<ServerStatus>('checking')
-
-  useEffect(() => {
-    fetch('/api/health')
-      .then((res) => (res.ok ? res.json() : Promise.reject(res.status)))
-      .then((body: { status: string }) =>
-        setStatus(body.status === 'ok' ? 'ok' : 'unreachable'),
-      )
-      .catch(() => setStatus('unreachable'))
-  }, [])
-
+  const route = useRoute()
   return (
     <main>
-      <h1>bassPractice</h1>
-      <p>
-        Serveur :{' '}
-        {status === 'checking' ? 'vérification…' : status === 'ok' ? 'OK' : 'injoignable'}
-      </p>
+      <h1>
+        <a href="#/">bassPractice</a>
+      </h1>
+      {route.page === 'bibliotheque' ? (
+        <Bibliotheque />
+      ) : (
+        <p>
+          Morceau {route.videoId} : l'affichage de la tablature arrive avec l'issue #6. <a href="#/">Retour</a>
+        </p>
+      )}
     </main>
   )
 }
