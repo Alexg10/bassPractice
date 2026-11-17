@@ -19,6 +19,7 @@ Single-context: one `GLOSSARY.md` + `docs/adr/` at the repo root, created lazily
 
 ## Dev
 
+- Prérequis : Python ≥ 3.12, Node, `ffmpeg` (`brew install ffmpeg`).
 - `make install` : venv Python dans `server/.venv` + `npm install` dans `web/`.
 - `make dev` : FastAPI sur :8000 + Vite sur :5173 (proxy `/api` → serveur).
 - `make test` : pytest côté serveur + build TypeScript côté web.
