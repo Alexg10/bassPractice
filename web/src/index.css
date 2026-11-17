@@ -169,3 +169,14 @@ main:has(.morceau) {
 .tablature .at-selection div {
   background: rgba(29, 118, 219, 0.2);
 }
+
+.barre-lecture label {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.mixeur {
+  margin-top: 0.5rem;
+  gap: 1.25rem;
+}

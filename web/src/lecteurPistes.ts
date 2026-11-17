@@ -10,6 +10,14 @@ const ECART_MAX_S = 0.04
 export class LecteurPistes implements alphaTab.synth.IExternalMediaHandler {
   readonly backing: HTMLAudioElement
   readonly basse: HTMLAudioElement
+  /**
+   * Appelé avant chaque départ de lecture et chaque saut pendant la lecture (dont le retour au début de la
+   * boucle). S'il renvoie une promesse (décompte), l'audio attend qu'elle soit résolue.
+   */
+  avantLecture: () => Promise<void> | null = () => null
+  /** Change à chaque pause : un décompte en cours ne relance pas l'audio si on a mis en pause entre-temps. */
+  private generation = 0
+  private enDecompte = false
 
   constructor(urlBacking: string, urlBasse: string) {
     this.backing = new Audio(urlBacking)
@@ -40,15 +48,55 @@ export class LecteurPistes implements alphaTab.synth.IExternalMediaHandler {
   get enLecture() {
     return !this.backing.paused
   }
+  get decompteEnCours() {
+    return this.enDecompte
+  }
+
+  get volumeBacking() {
+    return this.backing.volume
+  }
+  set volumeBacking(v: number) {
+    this.backing.volume = v
+  }
+  get volumeBasse() {
+    return this.basse.volume
+  }
+  set volumeBasse(v: number) {
+    this.basse.volume = v
+  }
 
   seekTo(ms: number) {
+    const reprendre = this.enLecture
     this.backing.currentTime = this.basse.currentTime = ms / 1000
+    if (!reprendre) return
+    const attente = this.avantLecture()
+    if (attente) {
+      this.mettreEnPauseAudio()
+      this.demarrer(attente)
+    }
   }
   play() {
-    this.basse.currentTime = this.backing.currentTime
-    void Promise.all([this.backing.play(), this.basse.play()]).catch(() => this.pause())
+    this.demarrer(this.avantLecture())
+  }
+  private demarrer(attente: Promise<void> | null) {
+    const generation = this.generation
+    const lancer = () => {
+      this.enDecompte = false
+      if (generation !== this.generation) return
+      this.basse.currentTime = this.backing.currentTime
+      void Promise.all([this.backing.play(), this.basse.play()]).catch(() => this.pause())
+    }
+    if (attente) {
+      this.enDecompte = true
+      void attente.then(lancer)
+    } else lancer()
   }
   pause() {
+    this.generation++
+    this.enDecompte = false
+    this.mettreEnPauseAudio()
+  }
+  private mettreEnPauseAudio() {
     this.backing.pause()
     this.basse.pause()
   }

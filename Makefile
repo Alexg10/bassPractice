@@ -18,4 +18,4 @@ dev-web:
 
 test:
 	cd server && .venv/bin/pytest -q
-	cd web && npm run build
+	cd web && npm test && npm run build
