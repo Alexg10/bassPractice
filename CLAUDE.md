@@ -16,3 +16,11 @@ Default five-label vocabulary (needs-triage, needs-info, ready-for-agent, ready-
 ### Domain docs
 
 Single-context: one `GLOSSARY.md` + `docs/adr/` at the repo root, created lazily. See `docs/agents/domain.md`.
+
+## Dev
+
+- Prérequis : Python ≥ 3.12, Node, `ffmpeg` (`brew install ffmpeg`).
+- `make install` : venv Python dans `server/.venv` + `npm install` dans `web/`.
+- `make dev` : FastAPI sur :8000 + Vite sur :5173 (proxy `/api` → serveur).
+- `make test` : pytest côté serveur + vitest et build TypeScript côté web.
+- La bibliothèque locale vit dans `data/` (ignoré par git, surchargeable via `BASSPRACTICE_DATA_DIR`).

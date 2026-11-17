@@ -1,0 +1,212 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color-scheme: light dark;
+  --texte: #1d1d1f;
+  --fond: #fafafa;
+  --discret: #6e6e73;
+  --carte: #ffffff;
+  --bord: #d2d2d7;
+  --accent: #1d76db;
+  --ok: #1a7f37;
+  --ko: #cf222e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --texte: #f5f5f7;
+    --fond: #161617;
+    --discret: #a1a1a6;
+    --carte: #1f1f21;
+    --bord: #3a3a3c;
+    --accent: #4c9aff;
+    --ok: #3fb950;
+    --ko: #f85149;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--fond);
+  color: var(--texte);
+}
+
+main {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+h1 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a {
+  color: var(--accent);
+}
+
+.ajout {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.ajout input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.6rem 0.75rem;
+  font-size: 1rem;
+  border: 1px solid var(--bord);
+  border-radius: 8px;
+  background: var(--carte);
+  color: inherit;
+}
+
+.ajout button {
+  padding: 0 1rem;
+  font-size: 1rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+}
+
+.ajout button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.erreur {
+  color: var(--ko);
+}
+
+.vide {
+  color: var(--discret);
+}
+
+.morceaux {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.morceaux li {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.5rem;
+  background: var(--carte);
+  border: 1px solid var(--bord);
+  border-radius: 10px;
+}
+
+.morceaux img {
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.meta {
+  color: var(--discret);
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+.etat.pret {
+  color: var(--ok);
+}
+
+.etat.echec {
+  color: var(--ko);
+}
+
+main:has(.morceau) {
+  max-width: none;
+}
+
+.barre-lecture {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.barre-lecture button {
+  min-width: 2.75rem;
+  height: 2.5rem;
+  font-size: 1rem;
+  border: 1px solid var(--bord);
+  border-radius: 8px;
+  background: var(--carte);
+  color: inherit;
+  cursor: pointer;
+}
+
+.tablature {
+  margin-top: 1rem;
+  background: #fff; /* alphaTab dessine en noir : fond clair même en mode sombre */
+  color: #000;
+  border-radius: 10px;
+  padding: 0.5rem;
+}
+
+.tablature .at-cursor-bar {
+  background: rgba(251, 202, 4, 0.2);
+}
+
+.tablature .at-cursor-beat {
+  background: #cf222e;
+  width: 3px;
+}
+
+.tablature .at-highlight * {
+  fill: #cf222e;
+  stroke: #cf222e;
+}
+
+.tablature .at-selection div {
+  background: rgba(29, 118, 219, 0.2);
+}
+
+.barre-lecture label {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.mixeur {
+  margin-top: 0.5rem;
+  gap: 1.25rem;
+}
+
+.grille {
+  margin-top: 0.5rem;
+}
+
+.grille input[type='number'] {
+  width: 5.5rem;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--bord);
+  border-radius: 6px;
+  background: var(--carte);
+  color: inherit;
+}
+
+.aide {
+  font-size: 0.8rem;
+}
+
+.tablature-cadre {
+  position: relative;
+}
+
+.selection-edition {
+  position: absolute;
+  display: none;
+  pointer-events: none;
+  border: 2px solid var(--accent);
+  border-radius: 4px;
+  background: rgba(29, 118, 219, 0.12);
+}

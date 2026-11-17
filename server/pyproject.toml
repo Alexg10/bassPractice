@@ -1,0 +1,22 @@
+[project]
+name = "basspractice-server"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "yt-dlp>=2026.10.26",
+  "audio-separator[cpu]==0.48.0",
+  "audioread>=3",  # requis par audio-separator mais absent de ses dépendances
+  "soundfile>=0.12",
+  "numpy>=2",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "httpx>=0.27"]
+
+[tool.setuptools]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
