@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prototype · synchro alphaTab</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; padding: 1rem; }
+      #controls { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; margin-bottom: .75rem; }
+      #debug { font: 13px ui-monospace, monospace; white-space: pre; background: #8881; padding: .5rem; border-radius: 6px; }
+      #debug .bad { color: #d33; font-weight: bold; }
+      #tab { margin-top: 1rem; }
+      .at-cursor-bar { background: #fbca0433; }
+      .at-cursor-beat { background: #d33; width: 3px; }
+      .at-highlight * { fill: #d33; stroke: #d33; }
+      .at-selection div { background: #1d76db33; }
+    </style>
+  </head>
+  <body>
+    <div id="controls">
+      <button id="play" disabled>▶︎ / ❚❚</button>
+      <button id="stop" disabled>■</button>
+      <label>Vitesse
+        <select id="speed"></select>
+      </label>
+      <label><input type="checkbox" id="loop" /> Boucle (glisser sur la tab pour choisir les mesures)</label>
+      <label>Longueur
+        <select id="length">
+          <option value="8">8 mesures</option>
+          <option value="120">120 mesures (~4 min 50)</option>
+        </select>
+      </label>
+      <button id="edit" disabled>Modifier une note au hasard</button>
+    </div>
+    <div id="debug">Génération de l'audio…</div>
+    <audio id="audio" preload="auto"></audio>
+    <div id="tab"></div>
+    <script type="module" src="./alphatab-sync.ts"></script>
+  </body>
+</html>
