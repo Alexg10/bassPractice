@@ -56,6 +56,7 @@ function toAlphaTex(tab: Tab): string {
 // --- Modèle → audio de test (OfflineAudioContext → WAV) ------------------------------------
 
 const SAMPLE_RATE = 44100
+const withClicks = () => (document.getElementById('ourClicks') as HTMLInputElement).checked
 const beatSeconds = (tab: Tab) => 60 / tab.tempo
 const barSeconds = (tab: Tab) => 4 * beatSeconds(tab)
 
@@ -93,7 +94,7 @@ async function renderAudio(tab: Tab): Promise<Blob> {
 
   tab.bars.forEach((bar, i) => {
     const barStart = offset + i * barSeconds(tab)
-    for (let b = 0; b < 4; b++) click(barStart + b * beatSeconds(tab), b === 0)
+    if (withClicks()) for (let b = 0; b < 4; b++) click(barStart + b * beatSeconds(tab), b === 0)
     let t = barStart
     for (const beat of bar) {
       const dur = (4 / beat.duration) * beatSeconds(tab)
@@ -188,9 +189,25 @@ let alphaTabBar = -1
 let worstDriftBars = 0
 let lastRenderMs = 0
 let renderStart = 0
+/** Depuis quand l'écart courant est non nul : un écart sur une seule image (saut de boucle) n'est pas une dérive. */
+let driftSince = 0
+let episodeLogged = false
+const SUSTAINED_DRIFT_MS = 150
+/** Dernière action (utilisateur ou alphaTab) avant une dérive, pour savoir ce qui la déclenche. */
+let lastAction = 'aucune'
+let lastActionAt = 0
+const driftLog: string[] = []
+function action(label: string) {
+  lastAction = label
+  lastActionAt = audio.currentTime
+}
 
 api.playedBeatChanged.on((beat) => (alphaTabBar = beat.voice.bar.index + 1))
-api.renderStarted.on(() => (renderStart = performance.now()))
+/** Chronomètre du changement de modèle jusqu'à la fin du rendu (alphaTab rend dans un worker). */
+function texTimed(tex: string) {
+  renderStart = performance.now()
+  api.tex(tex)
+}
 api.renderFinished.on(() => {
   lastRenderMs = performance.now() - renderStart
   $<HTMLButtonElement>('edit').disabled = false
@@ -204,15 +221,35 @@ function expectedBar(): number {
 function renderDebug() {
   const exp = expectedBar()
   const drift = exp > 0 && alphaTabBar > 0 ? Math.abs(exp - alphaTabBar) : 0
-  if (!audio.paused) worstDriftBars = Math.max(worstDriftBars, drift)
+  const now = performance.now()
+  if (!drift) {
+    driftSince = 0
+    episodeLogged = false
+  }
+  else if (!driftSince) driftSince = now
+  const sustained = drift && now - driftSince > SUSTAINED_DRIFT_MS
+  if (!audio.paused && sustained) {
+    // Une entrée par épisode de dérive : au moment où il devient « durable ».
+    if (!episodeLogged) {
+      episodeLogged = true
+      driftLog.unshift(
+        `t=${audio.currentTime.toFixed(2)}s attendue ${exp} / alphaTab ${alphaTabBar} (écart ${drift}) — dernière action : ${lastAction} à t=${lastActionAt.toFixed(2)}s, vitesse ${audio.playbackRate}`,
+      )
+      driftLog.length = Math.min(driftLog.length, 5)
+    }
+    worstDriftBars = Math.max(worstDriftBars, drift)
+  }
   const range = api.playbackRange
   debug.innerHTML = [
     `temps audio        : ${audio.currentTime.toFixed(2)} s  (vitesse ${audio.playbackRate}, preservesPitch ${audio.preservesPitch})`,
     `mesure attendue    : ${exp || '— (intro)'}`,
     `mesure alphaTab    : ${alphaTabBar > 0 ? alphaTabBar : '—'}`,
-    `écart              : <span class="${drift ? 'bad' : ''}">${drift}</span>   (pire écart pendant la lecture : <span class="${worstDriftBars ? 'bad' : ''}">${worstDriftBars}</span>)`,
+    `écart              : <span class="${drift ? 'bad' : ''}">${drift}</span>   (pire écart durable > 150 ms : <span class="${worstDriftBars ? 'bad' : ''}">${worstDriftBars}</span>)`,
     `boucle             : ${api.isLooping ? 'oui' : 'non'}  plage ${range ? `${range.startTick}→${range.endTick} ticks` : 'aucune'}`,
     `dernier rendu      : ${lastRenderMs.toFixed(0)} ms  (${tab.bars.length} mesures)`,
+    `métronome alphaTab : ${api.metronomeVolume}   décompte alphaTab : ${api.countInVolume}`,
+    `dérives durables   :`,
+    ...(driftLog.length ? driftLog.map((l) => `  ${l}`) : ['  aucune']),
   ].join('\n')
 }
 
@@ -227,23 +264,43 @@ async function load(barCount: number) {
   audio.src = url
   await new Promise((r) => audio.addEventListener('loadedmetadata', r, { once: true }))
   worstDriftBars = 0
-  api.tex(toAlphaTex(tab))
+  driftLog.length = 0
+  texTimed(toAlphaTex(tab))
 }
 
-$('play').addEventListener('click', () => api.playPause())
+$('play').addEventListener('click', () => {
+  action('lecture/pause')
+  api.playPause()
+})
 $('stop').addEventListener('click', () => {
+  action('stop')
   api.stop()
   worstDriftBars = 0
+  driftLog.length = 0
 })
-speed.addEventListener('change', () => (api.playbackSpeed = Number(speed.value)))
-$<HTMLInputElement>('loop').addEventListener('change', (e) => (api.isLooping = (e.target as HTMLInputElement).checked))
+speed.addEventListener('change', () => {
+  action(`vitesse ${speed.value}`)
+  api.playbackSpeed = Number(speed.value)
+})
+$<HTMLInputElement>('loop').addEventListener('change', (e) => {
+  action('boucle on/off')
+  api.isLooping = (e.target as HTMLInputElement).checked
+})
+$<HTMLInputElement>('atClicks').addEventListener('change', (e) => {
+  const on = (e.target as HTMLInputElement).checked
+  api.metronomeVolume = on ? 1 : 0
+  api.countInVolume = on ? 1 : 0
+})
+$<HTMLInputElement>('ourClicks').addEventListener('change', () => void load(tab.bars.length))
+audio.addEventListener('seeking', () => action('saut audio (clic sur la tab ou bouclage)'))
 $<HTMLSelectElement>('length').addEventListener('change', (e) => void load(Number((e.target as HTMLSelectElement).value)))
 $('edit').addEventListener('click', () => {
+  action('modifier une note')
   // Simule une édition : change une frette du modèle puis re-rend tout (l'audio ne change pas).
   const bar = tab.bars[Math.floor(Math.random() * tab.bars.length)]
   const beat = bar.find((b) => b.note)
   if (beat?.note) beat.note.fret = (beat.note.fret + 1) % 12
-  api.tex(toAlphaTex(tab))
+  texTimed(toAlphaTex(tab))
 })
 
 void load(8)
