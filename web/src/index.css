@@ -121,3 +121,51 @@ a {
 .etat.echec {
   color: var(--ko);
 }
+
+main:has(.morceau) {
+  max-width: none;
+}
+
+.barre-lecture {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.barre-lecture button {
+  min-width: 2.75rem;
+  height: 2.5rem;
+  font-size: 1rem;
+  border: 1px solid var(--bord);
+  border-radius: 8px;
+  background: var(--carte);
+  color: inherit;
+  cursor: pointer;
+}
+
+.tablature {
+  margin-top: 1rem;
+  background: #fff; /* alphaTab dessine en noir : fond clair même en mode sombre */
+  color: #000;
+  border-radius: 10px;
+  padding: 0.5rem;
+}
+
+.tablature .at-cursor-bar {
+  background: rgba(251, 202, 4, 0.2);
+}
+
+.tablature .at-cursor-beat {
+  background: #cf222e;
+  width: 3px;
+}
+
+.tablature .at-highlight * {
+  fill: #cf222e;
+  stroke: #cf222e;
+}
+
+.tablature .at-selection div {
+  background: rgba(29, 118, 219, 0.2);
+}

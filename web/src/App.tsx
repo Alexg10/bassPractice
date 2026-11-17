@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Bibliotheque } from './Bibliotheque'
+import { Morceau } from './Morceau'
 
 function useRoute() {
   const [hash, setHash] = useState(location.hash)
@@ -22,9 +23,7 @@ function App() {
       {route.page === 'bibliotheque' ? (
         <Bibliotheque />
       ) : (
-        <p>
-          Morceau {route.videoId} : l'affichage de la tablature arrive avec l'issue #6. <a href="#/">Retour</a>
-        </p>
+        <Morceau videoId={route.videoId} />
       )}
     </main>
   )

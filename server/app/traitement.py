@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+FICHIER_TABLATURE = "tablature.json"
+
 
 class EchecTraitement(Exception):
     """Échec d'une étape du traitement, avec un code stable et un message pour l'utilisateur."""

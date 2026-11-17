@@ -194,3 +194,54 @@ def test_un_traitement_interrompu_par_un_redemarrage_est_marque_en_echec(tmp_pat
     morceau = Bibliotheque(tmp_path / "bibliotheque.sqlite").obtenir(VIDEO_ID)
     assert morceau.statut == "echec"
     assert (morceau.echec.etape, morceau.echec.code) == ("séparation", "interrompu")
+
+
+# --- Tablature et pistes d'un morceau prêt ------------------------------------------------
+
+
+@pytest.fixture
+def morceau_pret(lancer, tmp_path):
+    import json
+
+    from app.traitement import dossier_du_morceau
+
+    client, _ = lancer()
+    client.post("/api/morceaux", json={"lien": LIEN})
+    dossier = dossier_du_morceau(tmp_path, VIDEO_ID)
+    dossier.mkdir(parents=True, exist_ok=True)
+    (dossier / "tablature.json").write_text(json.dumps({"grille": {"tempo": 100}, "mesures": []}))
+    (dossier / "piste-basse.wav").write_bytes(b"RIFF-basse")
+    (dossier / "backing-track.wav").write_bytes(b"RIFF-backing")
+    return client
+
+
+def test_renvoie_la_tablature_d_un_morceau(morceau_pret):
+    res = morceau_pret.get(f"/api/morceaux/{VIDEO_ID}/tablature")
+    assert res.status_code == 200
+    assert res.json()["grille"]["tempo"] == 100
+
+
+@pytest.mark.parametrize(("piste", "contenu"), [("piste-basse", b"RIFF-basse"), ("backing-track", b"RIFF-backing")])
+def test_sert_les_pistes_audio(morceau_pret, piste, contenu):
+    res = morceau_pret.get(f"/api/morceaux/{VIDEO_ID}/pistes/{piste}")
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "audio/wav"
+    assert res.content == contenu
+
+
+def test_les_pistes_audio_acceptent_les_requetes_partielles(morceau_pret):
+    # Nécessaire pour que le navigateur puisse se déplacer dans l'audio.
+    res = morceau_pret.get(f"/api/morceaux/{VIDEO_ID}/pistes/piste-basse", headers={"Range": "bytes=0-3"})
+    assert res.status_code == 206
+    assert res.content == b"RIFF"
+
+
+@pytest.mark.parametrize("piste", ["audio-original", "tablature", "..%2F..%2Fbibliotheque.sqlite"])
+def test_ne_sert_que_les_deux_pistes_de_pratique(morceau_pret, piste):
+    assert morceau_pret.get(f"/api/morceaux/{VIDEO_ID}/pistes/{piste}").status_code == 404
+
+
+def test_tablature_et_pistes_d_un_morceau_inconnu_renvoient_404(lancer):
+    client, _ = lancer()
+    assert client.get("/api/morceaux/zzzzzzzzzzz/tablature").status_code == 404
+    assert client.get("/api/morceaux/zzzzzzzzzzz/pistes/piste-basse").status_code == 404

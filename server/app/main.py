@@ -6,13 +6,15 @@ from pathlib import Path
 from typing import Callable
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
 from app.bibliotheque import Bibliotheque, Echec, Morceau
 from app.settings import DATA_DIR
 from app.telechargement import AudioOriginal, YtDlpYouTube, telecharger_audio_original, video_id_depuis_lien
-from app.traitement import EchecTraitement
+from app.traitement import FICHIER_TABLATURE, EchecTraitement, dossier_du_morceau
+
+PISTES_DE_PRATIQUE = {"piste-basse", "backing-track"}
 
 log = logging.getLogger(__name__)
 
@@ -100,6 +102,28 @@ def creer_app(
         if morceau is None:
             raise HTTPException(404, "Morceau inconnu.")
         return _json(morceau)
+
+    def morceau_pret(video_id: str, request: Request) -> Path:
+        morceau = request.app.state.bibliotheque.obtenir(video_id)
+        if morceau is None or morceau.statut != "pret":
+            raise HTTPException(404, "Morceau inconnu ou pas encore prêt.")
+        return dossier_du_morceau(data_dir, video_id)
+
+    @app.get("/api/morceaux/{video_id}/tablature")
+    def tablature(video_id: str, request: Request) -> FileResponse:
+        chemin = morceau_pret(video_id, request) / FICHIER_TABLATURE
+        if not chemin.exists():
+            raise HTTPException(404, "Tablature introuvable.")
+        return FileResponse(chemin, media_type="application/json")
+
+    @app.get("/api/morceaux/{video_id}/pistes/{piste}")
+    def piste(video_id: str, piste: str, request: Request) -> FileResponse:
+        if piste not in PISTES_DE_PRATIQUE:
+            raise HTTPException(404, "Piste inconnue.")
+        chemin = morceau_pret(video_id, request) / f"{piste}.wav"
+        if not chemin.exists():
+            raise HTTPException(404, "Piste introuvable.")
+        return FileResponse(chemin, media_type="audio/wav")
 
     @app.post("/api/morceaux")
     def ajouter(corps: NouveauMorceau, request: Request) -> JSONResponse:

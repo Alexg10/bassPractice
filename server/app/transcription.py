@@ -12,10 +12,9 @@ from app.grille import detecter_grille
 from app.positions import choisir_positions
 from app.quantification import quantifier
 from app.tablature import DOUBLES_CROCHES_PAR_MESURE, Note, Tablature
-from app.traitement import EchecTraitement, dossier_du_morceau
+from app.traitement import FICHIER_TABLATURE, EchecTraitement, dossier_du_morceau
 
 ETAPE = "transcription"
-FICHIER = "tablature.json"
 
 log = logging.getLogger(__name__)
 
@@ -43,10 +42,10 @@ def transcrire(video_id: str, data_dir: Path) -> Tablature:
         note.position = position
 
     tablature = Tablature(grille, mesures)
-    (dossier / FICHIER).write_text(json.dumps(tablature.vers_json(), ensure_ascii=False, indent=1))
+    (dossier / FICHIER_TABLATURE).write_text(json.dumps(tablature.vers_json(), ensure_ascii=False, indent=1))
     return tablature
 
 
 def lire_tablature(video_id: str, data_dir: Path) -> Tablature | None:
-    chemin = dossier_du_morceau(data_dir, video_id) / FICHIER
+    chemin = dossier_du_morceau(data_dir, video_id) / FICHIER_TABLATURE
     return Tablature.depuis_json(json.loads(chemin.read_text())) if chemin.exists() else None

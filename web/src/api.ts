@@ -29,3 +29,11 @@ export const ajouterMorceau = (lien: string) =>
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ lien }),
   }).then((r) => lire<Morceau>(r))
+
+export const obtenirMorceau = (videoId: string) => fetch(`/api/morceaux/${videoId}`).then((r) => lire<Morceau>(r))
+
+export const obtenirTablature = (videoId: string) =>
+  fetch(`/api/morceaux/${videoId}/tablature`).then((r) => lire<import('./tablature').Tablature>(r))
+
+export const urlPiste = (videoId: string, piste: 'piste-basse' | 'backing-track') =>
+  `/api/morceaux/${videoId}/pistes/${piste}`
