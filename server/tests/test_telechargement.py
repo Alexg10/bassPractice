@@ -2,9 +2,9 @@ from pathlib import Path
 
 import pytest
 
+from app.traitement import EchecTraitement
 from app.telechargement import (
     DUREE_MAX_S,
-    EchecTraitement,
     InfosVideo,
     classer_erreur_youtube,
     telecharger_audio_original,

@@ -6,21 +6,13 @@ from pathlib import Path
 from typing import Protocol
 from urllib.parse import parse_qs, urlparse
 
+from app.traitement import EchecTraitement, dossier_du_morceau
+
 ETAPE = "téléchargement"
 DUREE_MAX_S = 10 * 60
 
 _VIDEO_ID = re.compile(r"^[A-Za-z0-9_-]{11}$")
 _HOTES_YOUTUBE = {"youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com"}
-
-
-class EchecTraitement(Exception):
-    """Échec d'une étape du traitement, avec un code stable et un message pour l'utilisateur."""
-
-    def __init__(self, etape: str, code: str, message: str):
-        super().__init__(message)
-        self.etape = etape
-        self.code = code
-        self.message = message
 
 
 def _echec(code: str, message: str) -> EchecTraitement:
@@ -70,10 +62,6 @@ def video_id_depuis_lien(lien: str) -> str:
     if not candidat or not _VIDEO_ID.match(candidat):
         raise _echec("lien_invalide", "Ce lien n'est pas un lien vers une vidéo YouTube.")
     return candidat
-
-
-def dossier_du_morceau(data_dir: Path, video_id: str) -> Path:
-    return data_dir / "morceaux" / video_id
 
 
 def telecharger_audio_original(lien: str, youtube: YouTube, data_dir: Path) -> AudioOriginal:
@@ -129,7 +117,14 @@ class YtDlpYouTube:
         return InfosVideo(video_id, info.get("title") or video_id, int(duree) if duree else None)
 
     def telecharger_audio(self, video_id: str, dossier: Path) -> Path:
-        options = {"format": "bestaudio/best", "outtmpl": str(dossier / "audio-original.%(ext)s")}
+        options = {
+            "format": "bestaudio/best",
+            "outtmpl": str(dossier / "audio-original.%(ext)s"),
+            # Toujours en WAV : les étapes suivantes (séparation, transcription) lisent un seul format.
+            "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "wav"}],
+            # 44,1 kHz : la fréquence des pistes séparées, pour que tout l'audio d'un morceau soit aligné.
+            "postprocessor_args": {"extractaudio": ["-ar", "44100"]},
+        }
         info = self._extraire(video_id, options, download=True)
         return Path(info["requested_downloads"][0]["filepath"])
 

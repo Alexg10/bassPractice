@@ -5,7 +5,8 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from app.settings import DATA_DIR
-from app.telechargement import EchecTraitement, YouTube, YtDlpYouTube, telecharger_audio_original
+from app.traitement import EchecTraitement
+from app.telechargement import YouTube, YtDlpYouTube, telecharger_audio_original
 
 
 @asynccontextmanager
