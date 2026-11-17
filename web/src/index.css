@@ -180,3 +180,33 @@ main:has(.morceau) {
   margin-top: 0.5rem;
   gap: 1.25rem;
 }
+
+.grille {
+  margin-top: 0.5rem;
+}
+
+.grille input[type='number'] {
+  width: 5.5rem;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--bord);
+  border-radius: 6px;
+  background: var(--carte);
+  color: inherit;
+}
+
+.aide {
+  font-size: 0.8rem;
+}
+
+.tablature-cadre {
+  position: relative;
+}
+
+.selection-edition {
+  position: absolute;
+  display: none;
+  pointer-events: none;
+  border: 2px solid var(--accent);
+  border-radius: 4px;
+  background: rgba(29, 118, 219, 0.12);
+}

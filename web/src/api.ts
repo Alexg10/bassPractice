@@ -17,7 +17,7 @@ export class ErreurApi extends Error {}
 
 async function lire<T>(res: Response): Promise<T> {
   const corps = await res.json().catch(() => null)
-  if (!res.ok) throw new ErreurApi(corps?.message ?? `Erreur ${res.status}`)
+  if (!res.ok) throw new ErreurApi(corps?.message ?? corps?.detail ?? `Erreur ${res.status}`)
   return corps as T
 }
 
@@ -37,3 +37,12 @@ export const obtenirTablature = (videoId: string) =>
 
 export const urlPiste = (videoId: string, piste: 'piste-basse' | 'backing-track') =>
   `/api/morceaux/${videoId}/pistes/${piste}`
+
+export const enregistrerTablature = async (videoId: string, tablature: import('./tablature').Tablature) => {
+  const res = await fetch(`/api/morceaux/${videoId}/tablature`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(tablature),
+  })
+  if (!res.ok) await lire(res)
+}

@@ -16,5 +16,5 @@ Validé par le prototype de l'issue #9 (`web/prototype/alphatab-sync.ts`), sur u
 ## Consequences
 
 - **Métronome et décompte sont à notre charge.** En mode média externe, alphaTab ne produit aucun son : ses réglages `metronomeVolume` et `countInVolume` sont muets. On génère nous-mêmes les clics, calés sur la grille rythmique.
-- **Recharger la tablature arrête la lecture et revient au début.** L'éditeur doit mémoriser la position et la restaurer après chaque re-rendu.
+- **Recharger la tablature arrête la lecture et revient au début.** `tex()` recharge partition et midi de façon synchrone : l'éditeur mémorise la position et l'état de lecture, puis les restaure juste après l'appel. Piège : les émetteurs d'alphaTab (`midiLoaded`, `scoreLoaded`…) rejouent immédiatement leur dernier événement à un nouvel abonné ; s'y abonner pour « attendre » le rechargement ne marche pas.
 - **Notre lecteur pilote deux pistes (backing track + piste basse) derrière un seul `IExternalMediaHandler`.** Il doit les garder synchrones entre elles, y compris au ralenti sans changer la hauteur et lors des sauts de boucle.

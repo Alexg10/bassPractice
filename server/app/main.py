@@ -1,3 +1,4 @@
+import json
 import logging
 from concurrent.futures import Executor, ThreadPoolExecutor
 from contextlib import asynccontextmanager
@@ -6,11 +7,12 @@ from pathlib import Path
 from typing import Callable
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel
 
 from app.bibliotheque import Bibliotheque, Echec, Morceau
 from app.settings import DATA_DIR
+from app.tablature import TablatureInvalide, valider
 from app.telechargement import AudioOriginal, YtDlpYouTube, telecharger_audio_original, video_id_depuis_lien
 from app.traitement import FICHIER_TABLATURE, EchecTraitement, dossier_du_morceau
 
@@ -115,6 +117,19 @@ def creer_app(
         if not chemin.exists():
             raise HTTPException(404, "Tablature introuvable.")
         return FileResponse(chemin, media_type="application/json")
+
+    @app.put("/api/morceaux/{video_id}/tablature", status_code=204)
+    def enregistrer_tablature(video_id: str, corps: dict, request: Request) -> Response:
+        dossier = morceau_pret(video_id, request)
+        try:
+            tab = valider(corps)
+        except TablatureInvalide as e:
+            raise HTTPException(422, str(e)) from e
+        # Écriture atomique : un fichier temporaire puis renommage.
+        temporaire = dossier / f".{FICHIER_TABLATURE}.tmp"
+        temporaire.write_text(json.dumps(tab.vers_json(), ensure_ascii=False, indent=1))
+        temporaire.replace(dossier / FICHIER_TABLATURE)
+        return Response(status_code=204)
 
     @app.get("/api/morceaux/{video_id}/pistes/{piste}")
     def piste(video_id: str, piste: str, request: Request) -> FileResponse:

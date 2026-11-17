@@ -96,3 +96,30 @@ class Tablature:
             GrilleRythmique(g["tempo"], g["premiere_mesure_s"], tuple(g["signature"])),
             [Mesure([evenement(e) for e in m["evenements"]]) for m in d["mesures"]],
         )
+
+
+class TablatureInvalide(ValueError):
+    pass
+
+
+def valider(d: dict) -> Tablature:
+    """Relit une tablature reçue de l'éditeur ; lève TablatureInvalide si elle est incohérente."""
+    try:
+        tab = Tablature.depuis_json(d)
+    except (KeyError, TypeError, ValueError) as e:
+        raise TablatureInvalide(f"Format de tablature invalide : {e}") from e
+    if not tab.grille.tempo > 0 or tab.grille.premiere_mesure_s < 0:
+        raise TablatureInvalide("Grille rythmique invalide.")
+    for i, mesure in enumerate(tab.mesures, start=1):
+        if any(e.duree not in DUREES for e in mesure.evenements):
+            raise TablatureInvalide(f"Mesure {i} : durée non autorisée.")
+        if sum(e.duree for e in mesure.evenements) != DOUBLES_CROCHES_PAR_MESURE:
+            raise TablatureInvalide(f"Mesure {i} : elle ne dure pas une mesure de 4/4.")
+        for e in mesure.evenements:
+            if isinstance(e, Note) and e.position is not None:
+                p = e.position
+                if p.corde not in (1, 2, 3, 4) or not 0 <= p.frette <= FRETTE_MAX:
+                    raise TablatureInvalide(f"Mesure {i} : position hors du manche.")
+                if ACCORDAGE_MIDI[p.corde - 1] + p.frette != e.hauteur:
+                    raise TablatureInvalide(f"Mesure {i} : la position ne correspond pas à la hauteur.")
+    return tab

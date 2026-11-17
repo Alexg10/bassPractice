@@ -245,3 +245,67 @@ def test_tablature_et_pistes_d_un_morceau_inconnu_renvoient_404(lancer):
     client, _ = lancer()
     assert client.get("/api/morceaux/zzzzzzzzzzz/tablature").status_code == 404
     assert client.get("/api/morceaux/zzzzzzzzzzz/pistes/piste-basse").status_code == 404
+
+
+# --- Enregistrement des corrections -------------------------------------------------------
+
+TAB_VALIDE = {
+    "grille": {"tempo": 98.5, "premiere_mesure_s": 0.62, "signature": [4, 4]},
+    "mesures": [
+        {
+            "evenements": [
+                {"type": "note", "hauteur": 33, "duree": 4, "position": {"corde": 2, "frette": 0}},
+                {"type": "note", "hauteur": 26, "duree": 4, "position": None},
+                {"type": "silence", "duree": 8},
+            ]
+        }
+    ],
+}
+
+
+def test_enregistre_une_tablature_corrigee(morceau_pret):
+    res = morceau_pret.put(f"/api/morceaux/{VIDEO_ID}/tablature", json=TAB_VALIDE)
+
+    assert res.status_code == 204
+    relue = morceau_pret.get(f"/api/morceaux/{VIDEO_ID}/tablature").json()
+    assert relue["grille"]["tempo"] == 98.5
+    assert relue["mesures"][0]["evenements"][0]["position"] == {"corde": 2, "frette": 0}
+
+
+def _modifiee(**changements):
+    import copy
+
+    tab = copy.deepcopy(TAB_VALIDE)
+    evts = tab["mesures"][0]["evenements"]
+    if "duree" in changements:
+        evts[2]["duree"] = changements["duree"]
+    if "position" in changements:
+        evts[0]["position"] = changements["position"]
+    if "tempo" in changements:
+        tab["grille"]["tempo"] = changements["tempo"]
+    return tab
+
+
+@pytest.mark.parametrize(
+    "tab",
+    [
+        _modifiee(duree=4),  # la mesure ne fait plus 16 doubles croches
+        _modifiee(duree=5),  # durée non notable
+        _modifiee(position={"corde": 2, "frette": 3}),  # position incohérente avec la hauteur (33)
+        _modifiee(position={"corde": 5, "frette": 0}),  # corde inexistante
+        _modifiee(tempo=0),
+        {"grille": {"tempo": 100}},
+    ],
+)
+def test_refuse_une_tablature_invalide_sans_toucher_a_l_existante(morceau_pret, tab):
+    avant = morceau_pret.get(f"/api/morceaux/{VIDEO_ID}/tablature").json()
+
+    res = morceau_pret.put(f"/api/morceaux/{VIDEO_ID}/tablature", json=tab)
+
+    assert res.status_code == 422
+    assert morceau_pret.get(f"/api/morceaux/{VIDEO_ID}/tablature").json() == avant
+
+
+def test_n_enregistre_pas_la_tablature_d_un_morceau_inconnu(lancer):
+    client, _ = lancer()
+    assert client.put("/api/morceaux/zzzzzzzzzzz/tablature", json=TAB_VALIDE).status_code == 404
