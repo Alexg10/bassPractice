@@ -1,0 +1,18 @@
+# bassPractice
+
+App pour apprendre la basse : rechercher un morceau ou coller un lien Spotify/YouTube,
+récupérer la ligne de basse et la jouer en tablature (à la Guitar Pro).
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live in GitHub Issues on Alexg10/bassPractice (via the `gh` CLI). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five-label vocabulary (needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `GLOSSARY.md` + `docs/adr/` at the repo root, created lazily. See `docs/agents/domain.md`.
